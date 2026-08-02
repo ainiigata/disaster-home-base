@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#174a55">
+  <meta name="description" content="平時の備えと災害時の行動を一か所にまとめる端末内保存の防災アプリ">
+  <title>防災ホームベース</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+  <header class="app-header">
+    <button class="brand" data-view="home" aria-label="防災ホームベースのホームへ"><span aria-hidden="true">⌂</span><span><small>MY SAFETY BASE</small><strong>防災ホームベース</strong></span></button>
+    <button id="emergency-open" class="emergency-trigger"><span aria-hidden="true">!</span> 緊急モード</button>
+  </header>
+  <div class="layout">
+    <nav class="side-nav" aria-label="メインメニュー">
+      <button data-view="home"><span aria-hidden="true">⌂</span>ホーム</button>
+      <button data-view="supplies"><span aria-hidden="true">□</span>準備台帳</button>
+      <button data-view="procedures"><span aria-hidden="true">⌕</span>手順を探す</button>
+      <button data-view="family"><span aria-hidden="true">♧</span>家族カード</button>
+    </nav>
+    <main id="main" tabindex="-1">
+      <div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
+      <section id="view-home" class="view">
+        <div class="hero">
+          <div><p class="eyebrow">きょう、ひとつ備える</p><h1>迷う前に、<br><em>わが家の答えを。</em></h1><p>準備する日も、もしもの時も。必要な情報を端末の中にまとめます。</p></div>
+          <div id="readiness" class="readiness"></div>
+        </div>
+        <section id="first-steps" class="first-steps"></section>
+        <div class="section-heading"><div><p class="eyebrow">TODAY</p><h2>今日の確認</h2></div><button data-view="supplies" class="text-button">台帳を見る →</button></div>
+        <div id="alerts" class="alert-grid"></div>
+        <h2>すぐ開く</h2>
+        <div class="shortcut-grid">
+          <button data-view="supplies" data-tab="goBag"><span aria-hidden="true">▣</span><strong>持ち出し品</strong><small>玄関から持って出る物</small></button>
+          <button data-view="supplies" data-tab="stock"><span aria-hidden="true">◫</span><strong>備蓄</strong><small>数量と期限を点検</small></button>
+          <button data-view="procedures"><span aria-hidden="true">≡</span><strong>災害別手順</strong><small>今すぐ・その後の行動</small></button>
+          <button data-view="family"><span aria-hidden="true">♧</span><strong>家族カード</strong><small>集合場所と配慮事項</small></button>
+          <button data-view="supplies" data-tab="insurance"><span aria-hidden="true">◇</span><strong>保険確認</strong><small>更新日と補償の確認</small></button>
+          <button data-view="procedures" data-favorites="true"><span aria-hidden="true">☆</span><strong>お気に入り</strong><small>大切な手順をすぐ表示</small></button>
+        </div>
+        <section class="privacy-note"><span aria-hidden="true">✓</span><div><strong>登録内容はこの端末だけに保存</strong><p>外部送信やアカウント登録はありません。住所や証券番号全文は入力しないでください。</p></div></section>
+      </section>
+
+      <section id="view-emergency" class="view hidden emergency-view">
+        <div class="emergency-bar"><span aria-hidden="true">!</span><strong>緊急モード</strong><span id="emergency-hazard-label"></span></div>
+        <p class="urgent-lead">まず身の安全を確保してください。</p>
+        <h1 id="emergency-title">今すぐ行うこと</h1>
+        <p class="official-note">このアプリは端末内の事前情報です。自治体・気象庁・消防などの公的な指示を優先してください。</p>
+        <div id="emergency-procedures" class="emergency-list"></div>
+        <div class="emergency-columns">
+          <section><h2>持ち出し品</h2><div id="emergency-go-bag"></div></section>
+          <section><h2>集合場所・家族</h2><div id="emergency-family"></div></section>
+        </div>
+        <div class="emergency-actions"><button id="change-hazard" class="secondary">災害を変更</button><button id="exit-emergency" class="secondary">通常モードへ戻る</button></div>
+      </section>
+
+      <section id="view-supplies" class="view hidden">
+        <p class="eyebrow">PREPAREDNESS</p><h1>準備台帳</h1>
+        <div class="tab-list" role="tablist" aria-label="準備台帳の分類">
+          <button id="tab-goBag" role="tab" aria-controls="supply-panel" data-supply-tab="goBag">持ち出し品</button>
+          <button id="tab-stock" role="tab" aria-controls="supply-panel" data-supply-tab="stock">備蓄</button>
+          <button id="tab-locations" role="tab" aria-controls="supply-panel" data-supply-tab="locations">保管場所</button>
+          <button id="tab-insurance" role="tab" aria-controls="supply-panel" data-supply-tab="insurance">保険確認</button>
+        </div>
+        <section id="supply-panel" role="tabpanel" aria-live="polite"></section>
+      </section>
+
+      <section id="view-procedures" class="view hidden">
+        <p class="eyebrow">QUICK GUIDE</p><h1>手順を探す</h1>
+        <form id="search-form" class="search-form" role="search">
+          <label><span class="sr-only">手順を検索</span><input id="procedure-search" maxlength="50" placeholder="例：窓、充電、集合場所"></label>
+          <button class="primary" type="submit">検索</button>
+        </form>
+        <div class="filter-row">
+          <label>災害<select id="hazard-filter"><option value="all">すべて</option><option value="earthquake">地震</option><option value="typhoon">台風</option><option value="heavyRain">豪雨</option><option value="powerOutage">停電</option><option value="waterOutage">断水</option></select></label>
+          <label class="check-label"><input id="favorites-only" type="checkbox"> お気に入りだけ</label>
+        </div>
+        <p id="search-count" class="result-count" role="status"></p>
+        <div id="procedure-results" class="procedure-grid"></div>
+      </section>
+
+      <section id="view-family" class="view hidden">
+        <div class="section-heading"><div><p class="eyebrow">FAMILY CARD</p><h1>家族カード</h1></div><button id="add-family" class="primary compact" data-add-family>カードを追加</button></div>
+        <p class="page-intro">実名でなく呼び名だけで使えます。緊急時に必要な配慮事項と集合場所を端末内へ保存します。</p>
+        <div id="family-list" class="family-grid"></div>
+      </section>
+    </main>
+    <aside class="right-rail">
+      <p class="eyebrow">端末内の備え</p><div id="rail-summary"></div>
+      <section><h2>迷ったら</h2><p>最初は「家族カード」「集合場所」「持ち出し品」の3つだけ登録しましょう。</p></section>
+    </aside>
+  </div>
+  <nav class="bottom-nav" aria-label="メインメニュー">
+    <button data-view="home"><span aria-hidden="true">⌂</span>ホーム</button>
+    <button data-view="supplies"><span aria-hidden="true">□</span>準備</button>
+    <button data-view="procedures"><span aria-hidden="true">⌕</span>検索</button>
+    <button data-view="family"><span aria-hidden="true">♧</span>家族</button>
+  </nav>
+
+  <dialog id="hazard-dialog">
+    <form method="dialog">
+      <button class="dialog-close" value="cancel" aria-label="閉じる">×</button>
+      <p class="eyebrow">EMERGENCY</p><h2>いま起きていることは？</h2><p>選ぶと、今すぐ行う手順を表示します。</p>
+      <div class="hazard-grid">
+        <button value="earthquake"><span aria-hidden="true">揺</span>地震</button>
+        <button value="typhoon"><span aria-hidden="true">風</span>台風</button>
+        <button value="heavyRain"><span aria-hidden="true">雨</span>豪雨</button>
+        <button value="powerOutage"><span aria-hidden="true">暗</span>停電</button>
+        <button value="waterOutage"><span aria-hidden="true">水</span>断水</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="supply-dialog">
+    <form id="supply-form" novalidate>
+      <button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button>
+      <h2 id="supply-dialog-title">品目を追加</h2><div class="form-error hidden" role="alert" tabindex="-1"></div>
+      <input type="hidden" name="id">
+      <label class="field"><span>品名 *</span><input name="name" maxlength="40" autocomplete="off"><small data-error="name"></small></label>
+      <div class="form-grid"><label class="field"><span>カテゴリ</span><select name="category"><option value="water">水</option><option value="food">食料</option><option value="medical">医療</option><option value="light">照明・電源</option><option value="hygiene">衛生</option><option value="documents">書類</option><option value="other">その他</option></select></label><label class="field"><span>単位 *</span><input name="unit" value="個" maxlength="12"></label></div>
+      <div class="form-grid"><label class="field"><span>数量 *</span><input name="quantity" inputmode="numeric" value="1"><small data-error="quantity"></small></label><label class="field"><span>必要数 *</span><input name="minimumQuantity" inputmode="numeric" value="1"><small data-error="minimumQuantity"></small></label></div>
+      <label class="field"><span>期限</span><input name="expiresOn" type="date"><small data-error="expiresOn"></small></label>
+      <label class="field"><span>保管場所</span><select name="locationId"></select><small data-error="locationId"></small></label>
+      <label class="check-label"><input name="isGoBag" type="checkbox"> 持ち出し品にする</label>
+      <label class="check-label"><input name="isReady" type="checkbox"> 準備済みにする</label>
+      <label class="field"><span>メモ</span><textarea name="note" maxlength="300"></textarea><small data-error="note"></small></label>
+      <button class="primary save-button" type="submit">保存する</button><button class="secondary" type="button" data-close-dialog>キャンセル</button>
+    </form>
+  </dialog>
+
+  <dialog id="location-dialog">
+    <form id="location-form" novalidate><button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button><h2>保管場所を追加</h2><div class="form-error hidden" role="alert" tabindex="-1"></div><input type="hidden" name="id"><label class="field"><span>場所名 *</span><input name="name" maxlength="30"><small data-error="name"></small></label><label class="field"><span>メモ</span><textarea name="note" maxlength="200"></textarea><small data-error="note"></small></label><button class="primary save-button" type="submit">保存する</button><button class="secondary" type="button" data-close-dialog>キャンセル</button></form>
+  </dialog>
+
+  <dialog id="family-dialog">
+    <form id="family-form" novalidate><button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button><h2>家族カードを追加</h2><div class="form-error hidden" role="alert" tabindex="-1"></div><input type="hidden" name="id"><label class="field"><span>呼び名 *</span><input name="label" maxlength="30"><small data-error="label"></small></label><label class="field"><span>集合場所</span><input name="meetingPlace" maxlength="300"><small data-error="meetingPlace"></small></label><label class="field"><span>連絡メモ</span><textarea name="contactNote" maxlength="300"></textarea><small data-error="contactNote"></small></label><label class="field"><span>アレルギー・服薬・支援上の注意</span><textarea name="considerations" maxlength="300"></textarea><small data-error="considerations"></small></label><button class="primary save-button" type="submit">保存する</button><button class="secondary" type="button" data-close-dialog>キャンセル</button></form>
+  </dialog>
+
+  <dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title">確認</h2><p id="confirm-message"></p><div class="dialog-actions"><button value="cancel" class="secondary">キャンセル</button><button id="confirm-action" value="confirm" class="danger">実行する</button></div></form></dialog>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
