@@ -31,6 +31,28 @@ const FAMILY_LIMIT = 20;
 const SHOPPING_LIMIT = 100;
 const DISMISSED_REMINDERS_LIMIT = 200;
 
+// v1(旧rules.js)のPROCEDURES 15件 → 現行 js/data/procedures.js での後継id。
+// タスク3の手順id再編で v1の全15idが現行データから消えたため、v1移行時に
+// favoriteProcedureIds/emergencyCheckedIdsを翻訳してからPROCEDURES照合へ通す。
+// 意味の対応が一意に定まらない3件(eq-evacuate/ty-secure/rain-early。いずれも
+// 複数の新idに action が分割されており、どちらか一方を選ぶと残り半分の意味を
+// 誤魔化すことになる)は、誤った統合を避けるためあえて含めていない。
+// このマップはmigrateV1専用。safeStateはv2データしか扱わないため、翻訳はここでのみ行う。
+const LEGACY_PROCEDURE_IDS = {
+  "eq-drop": "eq-now-cover",
+  "eq-fire": "eq-after-exit",
+  "ty-charge": "ty-alert-power",
+  "ty-stay": "ty-now-window",
+  "rain-upper": "rain-now-lowland",
+  "rain-no-car": "rain-now-noflood",
+  "power-light": "pw-now-light",
+  "power-plug": "pw-now-unplug",
+  "power-battery": "pw-after-battery",
+  "water-store": "wt-alert-fill",
+  "water-valve": "wt-now-tap",
+  "water-hygiene": "wt-now-priority",
+};
+
 const finiteOr0 = n => (Number.isFinite(n) ? n : 0);
 
 export function defaultState() {
@@ -186,6 +208,13 @@ export function safeState(raw) {
   };
 }
 
+// v1のprocedure id配列を現行idへ翻訳する(存在しない旧id・対応表にない値はそのまま
+// 通し、最終的なPROCEDURES照合はsafeStateに任せる)。配列でなければ空配列を返す。
+function translateLegacyProcedureIds(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map(id => LEGACY_PROCEDURE_IDS[id] ?? id);
+}
+
 // v1(旧rules.js)の生データをv2形へ写像してからsafeStateへ通す。
 // v1にはhousehold/shopping/syncが存在しないため既定値を採用する。
 export function migrateV1(rawV1) {
@@ -214,8 +243,8 @@ export function migrateV1(rawV1) {
     shopping: base.shopping,
     mode: v1.mode,
     selectedHazard: v1.selectedHazard ?? null,
-    emergencyCheckedIds: v1.emergencyCheckedIds,
-    favoriteProcedureIds: v1.favoriteProcedureIds,
+    emergencyCheckedIds: translateLegacyProcedureIds(v1.emergencyCheckedIds),
+    favoriteProcedureIds: translateLegacyProcedureIds(v1.favoriteProcedureIds),
     dismissedReminders: base.dismissedReminders,
     ui: v1.ui ?? base.ui,
     sync: base.sync,
@@ -252,8 +281,19 @@ export function loadState(storage = localStorage) {
     if (rawV1 != null) {
       const parsedV1 = JSON.parse(rawV1);
       const state = migrateV1(parsedV1);
-      saveState(state, storage);
-      return { state, notice: "以前のデータを新しい形式に引き継ぎました。", isError: false };
+      // 移行そのものは成功しているので、保存(setItem)だけが失敗しても既定値へ
+      // 巻き戻さない。v1データはSTORAGE_KEY_V1にまだ残っており失われていないが、
+      // 今回のセッションでは保存できなかったことをisError/noticeで伝える。
+      try {
+        saveState(state, storage);
+        return { state, notice: "以前のデータを新しい形式に引き継ぎました。", isError: false };
+      } catch {
+        return {
+          state,
+          notice: "以前のデータを新しい形式に引き継ぎましたが、保存に失敗しました。もう一度お試しください。",
+          isError: true,
+        };
+      }
     }
 
     return { state: defaultState(), notice: null, isError: false };

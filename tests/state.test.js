@@ -130,3 +130,57 @@ test("safeState: householdが不正(大人0人・子ども0人)なら既定値�
   const s = safeState({ ...defaultState(), household: { adults: 0, children: 0, stockDays: 3, emergencyContacts: "", updatedAt: 999 } });
   assert.deepEqual(s.household, defaultState().household);
 });
+
+// ── レビュー指摘: migrateV1が手順id再編(タスク3)でv1のfavorite/emergency-checkedを
+// 全滅させていた件の追加テスト ──
+
+test("migrateV1: 現行スキームへ翻訳できるv1のfavoriteは新idとして残り、翻訳表にない未知のidは引き続き落ちる", () => {
+  const v1 = { schemaVersion: 1, mode: "normal", selectedHazard: null, emergencyCheckedIds: [],
+    supplies: [], locations: [], familyMembers: [],
+    favoriteProcedureIds: ["eq-drop", "power-light", "存在しないID"],
+    insurance: {}, ui: {} };
+  const s = migrateV1(v1);
+  assert.ok(s.favoriteProcedureIds.includes("eq-now-cover"), "eq-dropはeq-now-coverへ翻訳されて残るはず");
+  assert.ok(s.favoriteProcedureIds.includes("pw-now-light"), "power-lightはpw-now-lightへ翻訳されて残るはず");
+  assert.ok(!s.favoriteProcedureIds.includes("eq-drop"), "翻訳後は旧idそのものは残らない");
+  assert.ok(!s.favoriteProcedureIds.includes("存在しないID"), "対応表にも現行PROCEDURESにも無いidは落ちる");
+});
+
+test("safeState: 現行スキームのfavoriteはそのまま残る。v1翻訳はmigrateV1専用でsafeStateには無い", () => {
+  // "eq-drop" はv1の旧id。safeStateはv2データしか扱わない前提のため翻訳せず、
+  // 現行PROCEDURESに存在しないidとして単純に除外される。
+  const s = safeState({ ...defaultState(), favoriteProcedureIds: ["pw-now-light", "eq-drop"] });
+  assert.deepEqual(s.favoriteProcedureIds, ["pw-now-light"]);
+});
+
+test("safeState: emergencyCheckedIdsはselectedHazardと異なる災害の手順idを落とす", () => {
+  const s = safeState({
+    ...defaultState(),
+    mode: "emergency",
+    selectedHazard: "earthquake",
+    emergencyCheckedIds: ["eq-now-cover", "pw-now-light"],
+  });
+  assert.ok(s.emergencyCheckedIds.includes("eq-now-cover"), "selectedHazardと一致する手順idは残る");
+  assert.ok(!s.emergencyCheckedIds.includes("pw-now-light"), "hazardが異なる手順idは落ちる");
+});
+
+test("loadState: v1移行後の保存(setItem)が失敗しても、移行済みstateを既定値へ巻き戻さずisErrorで伝える", () => {
+  const v1 = JSON.stringify({
+    schemaVersion: 1, mode: "normal", selectedHazard: null, emergencyCheckedIds: [],
+    supplies: [], locations: [], familyMembers: [],
+    favoriteProcedureIds: ["eq-drop"],
+    insurance: {}, ui: {},
+  });
+  const st = memStorage({ [STORAGE_KEY_V1]: v1 });
+  st.setItem = k => { if (k === STORAGE_KEY) throw new Error("quota exceeded"); };
+  const { state, notice, isError } = loadState(st);
+  assert.equal(state.schemaVersion, 2);
+  assert.ok(state.favoriteProcedureIds.includes("eq-now-cover"), "保存に失敗しても移行結果自体は返るはず");
+  assert.equal(isError, true);
+  assert.ok(notice);
+});
+
+test("safeState: dismissedRemindersは文字列以外を除外し重複排除する", () => {
+  const s = safeState({ ...defaultState(), dismissedReminders: ["r1", "r1", 123, null, "r2"] });
+  assert.deepEqual(s.dismissedReminders, ["r1", "r2"]);
+});
