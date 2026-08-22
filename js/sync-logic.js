@@ -155,13 +155,15 @@ export function generatePassphrase() {
 }
 
 // 区切り文字とみなして「・」に統一する文字:
-// 半角/全角スペース、読点(、)、カンマ(,)、半角カンマ(，はNFKC対象なので個別扱い不要)、
-// 半角中黒(･)、「・」自身(連続を1つにまとめるため含める)。
-const SEPARATOR_RE = /[\s、,･・]+/gu;
+// 半角/全角スペース(\s は u フラグ付きで全角スペース U+3000 にもマッチする)、
+// 読点(、)、半角カンマ(,)、全角カンマ(，)、半角中黒(･)、
+// 「・」自身(連続を1つにまとめるため含める)。
+// NFKCは使っていない(全角数字の変換と競合しうるため、区切り文字はここで個別に列挙する)。
+const SEPARATOR_RE = /[\s、,，･・]+/gu;
 
 /**
  * 人が読み上げた合言葉を再入力したときの表記ゆれを吸収する。
- * - 空白(半角/全角)・読点・カンマ・半角中黒・「・」の連続 → 「・」1つに統一
+ * - 空白(半角/全角)・読点・カンマ(半角,/全角，)・半角中黒・「・」の連続 → 「・」1つに統一
  * - 全角数字 → 半角数字
  * - 前後の区切り文字を除去
  */
@@ -186,8 +188,19 @@ export async function householdIdFromPassphrase(pass) {
 }
 
 /**
+ * updatedAt を比較可能な数値に変換する。undefined/null など欠損値は -Infinity として
+ * 扱い、タイムスタンプを持つ側に必ず負けるようにする(0 を既定値にすると
+ * 正当な updatedAt:0 のレコードと区別できなくなるため -Infinity を使う)。
+ */
+function comparableUpdatedAt(entity) {
+  return entity.updatedAt ?? -Infinity;
+}
+
+/**
  * ローカルとリモートのエンティティ配列を id 単位の last-write-wins でマージする。
- * - 両方に存在する id: updatedAt が大きい方(同値なら remote)を採用
+ * - 両方に存在する id: updatedAt が大きい方(同値なら remote)を採用。
+ *   updatedAt が欠損している側は -Infinity 扱いとし、タイムスタンプを持つ側に必ず負ける。
+ *   両方欠損なら同値扱いとなり remote が勝つ(既定のタイブレークと一貫させる)。
  * - local のみに存在する id: そのまま残す
  * - remote のみに存在する id: 末尾に追加
  * 出力の順序は local の並び順を保持し、remote 限定の id はその後ろに続く。
@@ -201,7 +214,9 @@ export function mergeEntities(local, remote) {
     const remoteEntity = remoteById.get(localEntity.id);
     if (!remoteEntity) return localEntity;
     // 同値のときは remote を勝たせる(remoteはサーバー側の最新取り込みを表すため)。
-    return remoteEntity.updatedAt >= localEntity.updatedAt ? remoteEntity : localEntity;
+    return comparableUpdatedAt(remoteEntity) >= comparableUpdatedAt(localEntity)
+      ? remoteEntity
+      : localEntity;
   });
 
   for (const remoteEntity of remote) {

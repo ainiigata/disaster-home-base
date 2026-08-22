@@ -73,3 +73,38 @@ test("normalizePassphrase: 先頭・末尾が区切り文字だけのケース�
 test("normalizePassphrase: 全角数字混じりの4桁を半角化する", () => {
   assert.equal(normalizePassphrase("さくら・つばめ・ひかり・やま・０４１２"), "さくら・つばめ・ひかり・やま・0412");
 });
+
+test("normalizePassphrase: 全角カンマ(，)も区切りとして吸収する", () => {
+  assert.equal(
+    normalizePassphrase("さくら，つばめ，ひかり，やま，4172"),
+    "さくら・つばめ・ひかり・やま・4172"
+  );
+});
+
+test("normalizePassphrase: 全角スペース(U+3000)を単語間の区切りとして吸収する", () => {
+  assert.equal(
+    normalizePassphrase("さくら　つばめ　ひかり　やま　4172"),
+    "さくら・つばめ・ひかり・やま・4172"
+  );
+});
+
+test("mergeEntities: localのupdatedAtが欠損している場合、タイムスタンプを持つremoteが勝つ", () => {
+  const local = [{ id: "a", v: "L" }];
+  const remote = [{ id: "a", v: "R", updatedAt: 100 }];
+  const m = mergeEntities(local, remote);
+  assert.deepEqual(m.map(x => x.id + x.v), ["aR"]);
+});
+
+test("mergeEntities: remoteのupdatedAtが欠損している場合、タイムスタンプを持つlocalが勝つ", () => {
+  const local = [{ id: "a", v: "L", updatedAt: 100 }];
+  const remote = [{ id: "a", v: "R" }];
+  const m = mergeEntities(local, remote);
+  assert.deepEqual(m.map(x => x.id + x.v), ["aL"]);
+});
+
+test("mergeEntities: 両方updatedAt欠損なら同値扱いでremoteが勝つ(既定のタイブレークと一貫)", () => {
+  const local = [{ id: "a", v: "L" }];
+  const remote = [{ id: "a", v: "R" }];
+  const m = mergeEntities(local, remote);
+  assert.deepEqual(m.map(x => x.id + x.v), ["aR"]);
+});
