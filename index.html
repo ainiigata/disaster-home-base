@@ -2,143 +2,355 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#174a55">
-  <meta name="description" content="平時の備えと災害時の行動を一か所にまとめる端末内保存の防災アプリ">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="平時の備えと災害時の行動を一か所にまとめる、端末内保存の防災アプリ">
   <title>防災ホームベース</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <a class="skip-link" href="#main">本文へ移動</a>
+
   <header class="app-header">
-    <button class="brand" data-view="home" aria-label="防災ホームベースのホームへ"><span aria-hidden="true">⌂</span><span><small>MY SAFETY BASE</small><strong>防災ホームベース</strong></span></button>
-    <button id="emergency-open" class="emergency-trigger"><span aria-hidden="true">!</span> 緊急モード</button>
+    <button class="brand" data-view="home" aria-label="防災ホームベースのホームへ">
+      <span class="brand-mark" aria-hidden="true">家</span>
+      <span class="brand-text"><small>MY SAFETY BASE</small><strong>防災ホームベース</strong></span>
+    </button>
+    <button id="emergency-open" class="emergency-trigger">
+      <span aria-hidden="true">!</span><span class="emergency-trigger-label">緊急モード</span>
+    </button>
   </header>
+
   <div class="layout">
     <nav class="side-nav" aria-label="メインメニュー">
-      <button data-view="home"><span aria-hidden="true">⌂</span>ホーム</button>
-      <button data-view="supplies"><span aria-hidden="true">□</span>準備台帳</button>
-      <button data-view="procedures"><span aria-hidden="true">⌕</span>手順を探す</button>
-      <button data-view="family"><span aria-hidden="true">♧</span>家族カード</button>
+      <button data-view="home"><span aria-hidden="true">家</span>ホーム</button>
+      <button data-view="supplies"><span aria-hidden="true">備</span>準備台帳</button>
+      <button data-view="procedures"><span aria-hidden="true">手</span>手順を探す</button>
+      <button data-view="family"><span aria-hidden="true">族</span>家族カード</button>
     </nav>
+
     <main id="main" tabindex="-1">
-      <div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
-      <section id="view-home" class="view">
+      <p id="notice" class="notice hidden" role="status" aria-live="polite"></p>
+
+      <!-- ══ ホーム ══ -->
+      <section id="view-home" class="view" aria-labelledby="home-title">
         <div class="hero">
-          <div><p class="eyebrow">きょう、ひとつ備える</p><h1>迷う前に、<br><em>わが家の答えを。</em></h1><p>準備する日も、もしもの時も。必要な情報を端末の中にまとめます。</p></div>
-          <div id="readiness" class="readiness"></div>
+          <div class="hero-copy">
+            <p class="eyebrow">きょう、ひとつ備える</p>
+            <h1 id="home-title">迷う前に、<br><em>わが家の答えを。</em></h1>
+            <p class="lead">準備する日も、もしもの時も。必要なことを端末の中だけにまとめます。</p>
+          </div>
+          <div id="readiness" class="readiness" data-region></div>
         </div>
-        <section id="first-steps" class="first-steps"></section>
-        <div class="section-heading"><div><p class="eyebrow">TODAY</p><h2>今日の確認</h2></div><button data-view="supplies" class="text-button">台帳を見る →</button></div>
-        <div id="alerts" class="alert-grid"></div>
-        <h2>すぐ開く</h2>
+
+        <div id="reminder-banner" data-region></div>
+        <div id="today-action" data-region></div>
+        <div id="alerts" class="alert-grid" data-region></div>
+
+        <h2 class="section-title">すぐ開く</h2>
         <div class="shortcut-grid">
-          <button data-view="supplies" data-tab="goBag"><span aria-hidden="true">▣</span><strong>持ち出し品</strong><small>玄関から持って出る物</small></button>
-          <button data-view="supplies" data-tab="stock"><span aria-hidden="true">◫</span><strong>備蓄</strong><small>数量と期限を点検</small></button>
-          <button data-view="procedures"><span aria-hidden="true">≡</span><strong>災害別手順</strong><small>今すぐ・その後の行動</small></button>
-          <button data-view="family"><span aria-hidden="true">♧</span><strong>家族カード</strong><small>集合場所と配慮事項</small></button>
-          <button data-view="supplies" data-tab="insurance"><span aria-hidden="true">◇</span><strong>保険確認</strong><small>更新日と補償の確認</small></button>
-          <button data-view="procedures" data-favorites="true"><span aria-hidden="true">☆</span><strong>お気に入り</strong><small>大切な手順をすぐ表示</small></button>
+          <button data-view="supplies" data-tab="goBag"><span aria-hidden="true">袋</span><strong>持ち出し品</strong><small>玄関から持って出る物</small></button>
+          <button data-view="supplies" data-tab="stock"><span aria-hidden="true">箱</span><strong>備蓄</strong><small>必要量と数のずれを点検</small></button>
+          <button data-view="supplies" data-tab="rolling"><span aria-hidden="true">期</span><strong>入れ替え</strong><small>期限が近い物と買い足し</small></button>
+          <button data-view="procedures"><span aria-hidden="true">手</span><strong>災害別手順</strong><small>いま・そのあとの行動</small></button>
+          <button data-view="family"><span aria-hidden="true">族</span><strong>家族カード</strong><small>集合場所と配慮事項</small></button>
+          <button data-view="procedures" data-favorites="true"><span aria-hidden="true">星</span><strong>お気に入り</strong><small>大切な手順をすぐ表示</small></button>
         </div>
-        <section class="privacy-note"><span aria-hidden="true">✓</span><div><strong>登録内容はこの端末だけに保存</strong><p>外部送信やアカウント登録はありません。住所や証券番号全文は入力しないでください。</p></div></section>
+
+        <section class="privacy-note">
+          <span aria-hidden="true">鍵</span>
+          <div>
+            <strong>登録した内容は、この端末だけに保存されます</strong>
+            <p>アカウント登録も外部送信もありません。住所・証券番号の全文・生年月日は入力しないでください。</p>
+          </div>
+        </section>
       </section>
 
-      <section id="view-emergency" class="view hidden emergency-view">
-        <div class="emergency-bar"><span aria-hidden="true">!</span><strong>緊急モード</strong><span id="emergency-hazard-label"></span></div>
+      <!-- ══ 緊急モード ══ -->
+      <section id="view-emergency" class="view hidden" aria-labelledby="emergency-title">
+        <p class="emergency-bar">
+          <span class="emergency-bar-mark" aria-hidden="true">!</span>
+          <strong>緊急モード</strong>
+          <span id="emergency-hazard-label"></span>
+        </p>
         <p class="urgent-lead">まず身の安全を確保してください。</p>
         <h1 id="emergency-title">今すぐ行うこと</h1>
-        <p class="official-note">このアプリは端末内の事前情報です。自治体・気象庁・消防などの公的な指示を優先してください。</p>
-        <div id="emergency-procedures" class="emergency-list"></div>
+        <p class="official-note">このアプリに表示されるのは、事前に端末へ保存した情報です。自治体・気象庁・消防など公的な指示を優先してください。</p>
+
+        <div id="emergency-procedures" data-region></div>
+
         <div class="emergency-columns">
-          <section><h2>持ち出し品</h2><div id="emergency-go-bag"></div></section>
-          <section><h2>集合場所・家族</h2><div id="emergency-family"></div></section>
+          <section class="emergency-panel">
+            <h2>持ち出し品</h2>
+            <div id="emergency-go-bag" data-region></div>
+          </section>
+          <section class="emergency-panel">
+            <h2>集合場所・家族</h2>
+            <div id="emergency-family" data-region></div>
+          </section>
         </div>
-        <div class="emergency-actions"><button id="change-hazard" class="secondary">災害を変更</button><button id="exit-emergency" class="secondary">通常モードへ戻る</button></div>
+
+        <section class="emergency-panel">
+          <h2>緊急連絡メモ</h2>
+          <div id="emergency-contacts" data-region></div>
+        </section>
+
+        <section class="emergency-panel guide-171">
+          <h2>171 災害用伝言ダイヤルの使い方</h2>
+          <ol class="steps-171">
+            <li><strong>171</strong> に電話をかける</li>
+            <li>録音は <strong>1</strong>、再生は <strong>2</strong> を押す</li>
+            <li>自宅など、家族で決めた電話番号を市外局番から入力する</li>
+            <li>案内に従って、30秒以内で伝言を残す・聞く</li>
+          </ol>
+          <p class="panel-note">携帯電話・公衆電話からも使えます。伝える番号は家族で先に決めておきましょう。</p>
+        </section>
+
+        <div class="emergency-actions">
+          <button id="change-hazard" class="secondary">災害を変更</button>
+          <button id="exit-emergency" class="secondary">通常モードへ戻る</button>
+        </div>
       </section>
 
-      <section id="view-supplies" class="view hidden">
-        <p class="eyebrow">PREPAREDNESS</p><h1>準備台帳</h1>
+      <!-- ══ 準備台帳 ══ -->
+      <section id="view-supplies" class="view hidden" aria-labelledby="supplies-title">
+        <p class="eyebrow">PREPAREDNESS</p>
+        <h1 id="supplies-title">準備台帳</h1>
         <div class="tab-list" role="tablist" aria-label="準備台帳の分類">
           <button id="tab-goBag" role="tab" aria-controls="supply-panel" data-supply-tab="goBag">持ち出し品</button>
           <button id="tab-stock" role="tab" aria-controls="supply-panel" data-supply-tab="stock">備蓄</button>
+          <button id="tab-rolling" role="tab" aria-controls="supply-panel" data-supply-tab="rolling">入れ替え</button>
           <button id="tab-locations" role="tab" aria-controls="supply-panel" data-supply-tab="locations">保管場所</button>
-          <button id="tab-insurance" role="tab" aria-controls="supply-panel" data-supply-tab="insurance">保険確認</button>
+          <button id="tab-insurance" role="tab" aria-controls="supply-panel" data-supply-tab="insurance">保険</button>
         </div>
-        <section id="supply-panel" role="tabpanel" aria-live="polite"></section>
+        <section id="supply-panel" role="tabpanel" tabindex="-1" aria-live="polite" data-region></section>
       </section>
 
-      <section id="view-procedures" class="view hidden">
-        <p class="eyebrow">QUICK GUIDE</p><h1>手順を探す</h1>
+      <!-- ══ 手順を探す ══ -->
+      <section id="view-procedures" class="view hidden" aria-labelledby="procedures-title">
+        <p class="eyebrow">QUICK GUIDE</p>
+        <h1 id="procedures-title">手順を探す</h1>
         <form id="search-form" class="search-form" role="search">
-          <label><span class="sr-only">手順を検索</span><input id="procedure-search" maxlength="50" placeholder="例：窓、充電、集合場所"></label>
+          <label class="search-field">
+            <span class="sr-only">手順を検索</span>
+            <input id="procedure-search" name="q" type="search" maxlength="50" autocomplete="off" aria-describedby="search-hint">
+          </label>
           <button class="primary" type="submit">検索</button>
         </form>
+        <p id="search-hint" class="field-hint">例: 窓、充電、集合場所</p>
         <div class="filter-row">
-          <label>災害<select id="hazard-filter"><option value="all">すべて</option><option value="earthquake">地震</option><option value="typhoon">台風</option><option value="heavyRain">豪雨</option><option value="powerOutage">停電</option><option value="waterOutage">断水</option></select></label>
+          <label class="filter-label">災害<select id="hazard-filter"></select></label>
+          <label class="filter-label">段階<select id="phase-filter"></select></label>
           <label class="check-label"><input id="favorites-only" type="checkbox"> お気に入りだけ</label>
         </div>
         <p id="search-count" class="result-count" role="status"></p>
-        <div id="procedure-results" class="procedure-grid"></div>
+        <div id="procedure-results" class="procedure-grid" data-region></div>
       </section>
 
-      <section id="view-family" class="view hidden">
-        <div class="section-heading"><div><p class="eyebrow">FAMILY CARD</p><h1>家族カード</h1></div><button id="add-family" class="primary compact" data-add-family>カードを追加</button></div>
-        <p class="page-intro">実名でなく呼び名だけで使えます。緊急時に必要な配慮事項と集合場所を端末内へ保存します。</p>
-        <div id="family-list" class="family-grid"></div>
+      <!-- ══ 家族カード ══ -->
+      <section id="view-family" class="view hidden" aria-labelledby="family-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">FAMILY CARD</p>
+            <h1 id="family-title">家族カード</h1>
+          </div>
+          <button id="add-family" class="primary compact" data-add-family>カードを追加</button>
+        </div>
+        <p class="lead">実名でなく呼び名だけで使えます。集合場所と配慮事項を、この端末に保存します。</p>
+        <div id="family-list" class="family-grid" data-region></div>
+
+        <section class="stack-section">
+          <h2 class="section-title">世帯の設定</h2>
+          <p class="section-note">人数と備蓄日数から、必要な備蓄量を計算します。</p>
+          <div id="household-card" data-region></div>
+        </section>
+
+        <section class="stack-section">
+          <h2 class="section-title">家族と共有</h2>
+          <p class="section-note">合言葉を使って、家族の端末と同じ内容を見られるようにします。</p>
+          <div id="share-section" data-region></div>
+        </section>
       </section>
     </main>
-    <aside class="right-rail">
-      <p class="eyebrow">端末内の備え</p><div id="rail-summary"></div>
-      <section><h2>迷ったら</h2><p>最初は「家族カード」「集合場所」「持ち出し品」の3つだけ登録しましょう。</p></section>
+
+    <aside class="right-rail" aria-label="補足情報">
+      <section class="rail-card">
+        <p class="eyebrow">この端末の中に</p>
+        <p>登録した備え・家族の情報は、外に出ることなくこの端末に保存されます。</p>
+      </section>
+      <section class="rail-card">
+        <h2>迷ったら</h2>
+        <p>まずは「家族カード」「集合場所」「持ち出し品」の3つだけ登録しましょう。全部を一度にそろえなくて大丈夫です。</p>
+      </section>
+      <section class="rail-card">
+        <h2>いざという時</h2>
+        <p>画面右上の「緊急モード」から、災害を選ぶだけで今すぐ行う手順が開きます。</p>
+      </section>
     </aside>
   </div>
+
   <nav class="bottom-nav" aria-label="メインメニュー">
-    <button data-view="home"><span aria-hidden="true">⌂</span>ホーム</button>
-    <button data-view="supplies"><span aria-hidden="true">□</span>準備</button>
-    <button data-view="procedures"><span aria-hidden="true">⌕</span>検索</button>
-    <button data-view="family"><span aria-hidden="true">♧</span>家族</button>
+    <button data-view="home"><span aria-hidden="true">家</span>ホーム</button>
+    <button data-view="supplies"><span aria-hidden="true">備</span>準備</button>
+    <button data-view="procedures"><span aria-hidden="true">手</span>手順</button>
+    <button data-view="family"><span aria-hidden="true">族</span>家族</button>
   </nav>
 
-  <dialog id="hazard-dialog">
+  <!-- ══ ダイアログ ══ -->
+  <dialog id="hazard-dialog" aria-labelledby="hazard-dialog-title">
     <form method="dialog">
       <button class="dialog-close" value="cancel" aria-label="閉じる">×</button>
-      <p class="eyebrow">EMERGENCY</p><h2>いま起きていることは？</h2><p>選ぶと、今すぐ行う手順を表示します。</p>
-      <div class="hazard-grid">
-        <button value="earthquake"><span aria-hidden="true">揺</span>地震</button>
-        <button value="typhoon"><span aria-hidden="true">風</span>台風</button>
-        <button value="heavyRain"><span aria-hidden="true">雨</span>豪雨</button>
-        <button value="powerOutage"><span aria-hidden="true">暗</span>停電</button>
-        <button value="waterOutage"><span aria-hidden="true">水</span>断水</button>
-      </div>
+      <p class="eyebrow">EMERGENCY</p>
+      <h2 id="hazard-dialog-title">いま起きていることは？</h2>
+      <p>選ぶと、今すぐ行う手順を表示します。公的な指示を優先してください。</p>
+      <div id="hazard-grid" class="hazard-grid"></div>
     </form>
   </dialog>
 
-  <dialog id="supply-dialog">
+  <dialog id="supply-dialog" aria-labelledby="supply-dialog-title">
     <form id="supply-form" novalidate>
       <button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button>
-      <h2 id="supply-dialog-title">品目を追加</h2><div class="form-error hidden" role="alert" tabindex="-1"></div>
+      <h2 id="supply-dialog-title">品目を追加</h2>
+      <p class="form-error hidden" role="alert" tabindex="-1"></p>
       <input type="hidden" name="id">
+      <input type="hidden" name="recommendedKey">
       <label class="field"><span>品名 *</span><input name="name" maxlength="40" autocomplete="off"><small data-error="name"></small></label>
-      <div class="form-grid"><label class="field"><span>カテゴリ</span><select name="category"><option value="water">水</option><option value="food">食料</option><option value="medical">医療</option><option value="light">照明・電源</option><option value="hygiene">衛生</option><option value="documents">書類</option><option value="other">その他</option></select></label><label class="field"><span>単位 *</span><input name="unit" value="個" maxlength="12"></label></div>
-      <div class="form-grid"><label class="field"><span>数量 *</span><input name="quantity" inputmode="numeric" value="1"><small data-error="quantity"></small></label><label class="field"><span>必要数 *</span><input name="minimumQuantity" inputmode="numeric" value="1"><small data-error="minimumQuantity"></small></label></div>
+      <div class="form-grid">
+        <label class="field"><span>カテゴリ</span>
+          <select name="category">
+            <option value="water">水</option>
+            <option value="food">食料</option>
+            <option value="medical">医療</option>
+            <option value="light">照明・電源</option>
+            <option value="hygiene">衛生</option>
+            <option value="documents">書類</option>
+            <option value="other">その他</option>
+          </select>
+        </label>
+        <label class="field"><span>単位 *</span><input name="unit" value="個" maxlength="12"><small data-error="unit"></small></label>
+      </div>
+      <div class="form-grid">
+        <label class="field"><span>数量 *</span><input name="quantity" inputmode="numeric" value="1"><small data-error="quantity"></small></label>
+        <label class="field"><span>必要数 *</span><input name="minimumQuantity" inputmode="numeric" value="1"><small data-error="minimumQuantity"></small></label>
+      </div>
       <label class="field"><span>期限</span><input name="expiresOn" type="date"><small data-error="expiresOn"></small></label>
       <label class="field"><span>保管場所</span><select name="locationId"></select><small data-error="locationId"></small></label>
       <label class="check-label"><input name="isGoBag" type="checkbox"> 持ち出し品にする</label>
       <label class="check-label"><input name="isReady" type="checkbox"> 準備済みにする</label>
       <label class="field"><span>メモ</span><textarea name="note" maxlength="300"></textarea><small data-error="note"></small></label>
-      <button class="primary save-button" type="submit">保存する</button><button class="secondary" type="button" data-close-dialog>キャンセル</button>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog>キャンセル</button>
+        <button class="primary save-button" type="submit">保存する</button>
+      </div>
     </form>
   </dialog>
 
-  <dialog id="location-dialog">
-    <form id="location-form" novalidate><button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button><h2>保管場所を追加</h2><div class="form-error hidden" role="alert" tabindex="-1"></div><input type="hidden" name="id"><label class="field"><span>場所名 *</span><input name="name" maxlength="30"><small data-error="name"></small></label><label class="field"><span>メモ</span><textarea name="note" maxlength="200"></textarea><small data-error="note"></small></label><button class="primary save-button" type="submit">保存する</button><button class="secondary" type="button" data-close-dialog>キャンセル</button></form>
+  <dialog id="location-dialog" aria-labelledby="location-dialog-title">
+    <form id="location-form" novalidate>
+      <button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button>
+      <h2 id="location-dialog-title">保管場所を追加</h2>
+      <p class="form-error hidden" role="alert" tabindex="-1"></p>
+      <input type="hidden" name="id">
+      <label class="field"><span>場所名 *</span><input name="name" maxlength="30"><small data-error="name"></small></label>
+      <label class="field"><span>メモ</span><textarea name="note" maxlength="200"></textarea><small data-error="note"></small></label>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog>キャンセル</button>
+        <button class="primary save-button" type="submit">保存する</button>
+      </div>
+    </form>
   </dialog>
 
-  <dialog id="family-dialog">
-    <form id="family-form" novalidate><button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button><h2>家族カードを追加</h2><div class="form-error hidden" role="alert" tabindex="-1"></div><input type="hidden" name="id"><label class="field"><span>呼び名 *</span><input name="label" maxlength="30"><small data-error="label"></small></label><label class="field"><span>集合場所</span><input name="meetingPlace" maxlength="300"><small data-error="meetingPlace"></small></label><label class="field"><span>連絡メモ</span><textarea name="contactNote" maxlength="300"></textarea><small data-error="contactNote"></small></label><label class="field"><span>アレルギー・服薬・支援上の注意</span><textarea name="considerations" maxlength="300"></textarea><small data-error="considerations"></small></label><button class="primary save-button" type="submit">保存する</button><button class="secondary" type="button" data-close-dialog>キャンセル</button></form>
+  <dialog id="family-dialog" aria-labelledby="family-dialog-title">
+    <form id="family-form" novalidate>
+      <button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button>
+      <h2 id="family-dialog-title">家族カードを追加</h2>
+      <p class="form-error hidden" role="alert" tabindex="-1"></p>
+      <input type="hidden" name="id">
+      <label class="field"><span>呼び名 *</span><input name="label" maxlength="30"><small data-error="label"></small></label>
+      <label class="field"><span>集合場所</span><input name="meetingPlace" maxlength="300"><small data-error="meetingPlace"></small></label>
+      <label class="field"><span>連絡メモ</span><textarea name="contactNote" maxlength="300"></textarea><small data-error="contactNote"></small></label>
+      <label class="field"><span>アレルギー・服薬・支援上の注意</span><textarea name="considerations" maxlength="300"></textarea><small data-error="considerations"></small></label>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog>キャンセル</button>
+        <button class="primary save-button" type="submit">保存する</button>
+      </div>
+    </form>
   </dialog>
 
-  <dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title">確認</h2><p id="confirm-message"></p><div class="dialog-actions"><button value="cancel" class="secondary">キャンセル</button><button id="confirm-action" value="confirm" class="danger">実行する</button></div></form></dialog>
-  <script type="module" src="./app.js"></script>
+  <dialog id="household-dialog" aria-labelledby="household-dialog-title">
+    <form id="household-form" novalidate>
+      <button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button>
+      <h2 id="household-dialog-title">世帯の設定</h2>
+      <p class="form-error hidden" role="alert" tabindex="-1"></p>
+      <div class="form-grid">
+        <label class="field"><span>大人の人数 *</span><input name="adults" inputmode="numeric" value="2"><small data-error="adults"></small></label>
+        <label class="field"><span>子どもの人数 *</span><input name="children" inputmode="numeric" value="0"><small data-error="children"></small></label>
+      </div>
+      <fieldset class="field-set">
+        <legend>備蓄する日数 *</legend>
+        <div class="radio-row">
+          <label class="check-label"><input type="radio" name="stockDays" value="3" checked> 3日分</label>
+          <label class="check-label"><input type="radio" name="stockDays" value="7"> 7日分</label>
+        </div>
+        <small data-error="stockDays"></small>
+      </fieldset>
+      <label class="field"><span>緊急連絡メモ</span><textarea name="emergencyContacts" maxlength="500"></textarea><small data-error="emergencyContacts"></small></label>
+      <p class="form-note">家族の呼び名と連絡先のメモに使います。住所や生年月日は書かないでください。</p>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog>キャンセル</button>
+        <button class="primary save-button" type="submit">保存する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="share-create-dialog" aria-labelledby="share-create-title">
+    <form method="dialog">
+      <button class="dialog-close" value="cancel" aria-label="閉じる">×</button>
+      <p class="eyebrow">FAMILY SHARE</p>
+      <h2 id="share-create-title">家族の合言葉ができました</h2>
+      <p class="passphrase-display" id="share-passphrase"></p>
+      <p class="passphrase-lead"><strong>この合言葉を家族に伝えてください。</strong>家族はこの合言葉を入力するだけで、同じ内容を見られるようになります。</p>
+      <p class="form-note">合言葉を知っている人は誰でも世帯の内容を見られます。家族以外には伝えないでください。</p>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" id="copy-passphrase">合言葉をコピー</button>
+        <button class="primary" value="done">閉じる</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="share-join-dialog" aria-labelledby="share-join-title">
+    <form id="share-join-form" novalidate>
+      <button class="dialog-close" type="button" data-close-dialog aria-label="閉じる">×</button>
+      <h2 id="share-join-title">合言葉で家族に参加</h2>
+      <p class="form-error hidden" role="alert" tabindex="-1"></p>
+      <label class="field"><span>合言葉 *</span><input name="passphrase" maxlength="80" autocomplete="off" aria-describedby="passphrase-hint"><small data-error="passphrase"></small></label>
+      <p id="passphrase-hint" class="field-hint">例: さくら・つばめ・ひかり・やま・4172</p>
+      <fieldset class="field-set">
+        <legend>いまの内容をどうしますか *</legend>
+        <label class="check-label"><input type="radio" name="mergeMode" value="merge" checked> 自分のデータと合流する</label>
+        <label class="check-label"><input type="radio" name="mergeMode" value="replace"> 世帯のデータで置き換える</label>
+      </fieldset>
+      <div class="dialog-actions">
+        <button class="secondary" type="button" data-close-dialog>キャンセル</button>
+        <button class="primary save-button" type="submit">参加する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h2 id="confirm-title">確認</h2>
+      <p id="confirm-message"></p>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary">キャンセル</button>
+        <button id="confirm-action" value="confirm" class="danger">実行する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>
