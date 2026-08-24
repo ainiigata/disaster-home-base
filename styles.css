@@ -413,7 +413,7 @@ main {
   min-height: 1.1em;
   margin-top: 3px;
   color: var(--danger);
-  font-size: var(--fs-micro);
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 .field input[aria-invalid="true"], .field textarea[aria-invalid="true"], .field select[aria-invalid="true"] {

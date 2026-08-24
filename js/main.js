@@ -18,8 +18,8 @@
 //                 {kind:"supplies"|"locations"|"familyMembers", entity}  … 追加・更新
 //                 {kind:"supplies"|"locations"|"familyMembers", removedId} … 削除
 //                 {shared:"insurance"|"household"|"all"}                 … 単一ドキュメント
-//      戻り値 false は「保存に失敗し、状態もDOMも変わっていない」。チェックボックス等
-//      DOM側が先に変わる操作では、false のとき呼び出し側で ctx.render() して戻すこと。
+//      戻り値 false は「保存に失敗し、状態は変わっていない(#notice への通知表示を除く)」。
+//      チェックボックス等 DOM側が先に変わる操作では、false のとき呼び出し側で ctx.render() して戻すこと。
 //
 //  render() -> void
 //      シェル(表示中ビュー・ナビ・タブ・緊急モードのクラス)を同期し、
@@ -65,7 +65,7 @@
 //          ui/procedures.js: #search-form #procedure-search #hazard-filter #phase-filter
 //                            #favorites-only #search-count #procedure-results
 //  Task 10 ui/supplies.js: #supply-panel と supply-dialog / location-dialog の中身
-//  Task 11 ui/family.js: #family-list #household-card と family-dialog / household-dialog
+//  Task 11 ui/family.js: #family-list #add-family #household-card と family-dialog / household-dialog
 //          ui/emergency.js: #emergency-hazard-label #emergency-title #emergency-procedures
 //                           #emergency-go-bag #emergency-family #emergency-contacts
 //  Task 12 ui/share.js: #share-section と share-create-dialog / share-join-dialog
