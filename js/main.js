@@ -100,6 +100,7 @@ const VIEWS = ["home", "supplies", "procedures", "family", "emergency"];
 const SUPPLY_TABS = ["goBag", "stock", "rolling", "locations", "insurance"];
 const SAVE_ERROR = "保存できませんでした。入力は残っています。もう一度お試しください。";
 const NOTICE_MS = 6000;
+const NOTICE_ERROR_MS = 14000;
 
 let state;
 let pendingConfirm = null;
@@ -120,9 +121,12 @@ function notice(text, isError = false) {
   box.classList.toggle("is-error", isError);
   box.classList.remove("hidden");
   clearTimeout(noticeTimer);
-  // エラー通知は保存失敗など利用者が対処すべき状態を表すため、次の通知に置き換わるまで
-  // 画面に残す(自動で消して見落とされると、入力が保存されていないことに気づけない)。
-  if (!isError) noticeTimer = setTimeout(() => box.classList.add("hidden"), NOTICE_MS);
+  // エラー通知は保存失敗など利用者が対処すべき状態を表すが、緊急画面では#noticeが
+  // <main>の先頭子要素で実レイアウト高を占めるため(position:sticky)、永遠に残すと
+  // 最初のチェック可能な手順を約50-70px押し下げてしまう。14秒あれば十分読める時間
+  // であり、無期限よりはこちらが優先される。
+  const timeoutMs = isError ? NOTICE_ERROR_MS : NOTICE_MS;
+  noticeTimer = setTimeout(() => box.classList.add("hidden"), timeoutMs);
 }
 
 // ── リモート→ローカル ────────────────────────────────────────────────────
