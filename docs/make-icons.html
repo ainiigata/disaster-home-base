@@ -24,7 +24,7 @@
 async function drawAt(canvasId, size) {
   const canvas = document.getElementById(canvasId);
   const ctx = canvas.getContext("2d");
-  const res = await fetch("./icon.svg");
+  const res = await fetch("../icons/icon.svg");
   const svgText = await res.text();
   const img = new Image();
   const blob = new Blob([svgText], { type: "image/svg+xml" });

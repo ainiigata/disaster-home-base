@@ -459,7 +459,7 @@ function addRecommended(ctx, key) {
   const entity = { ...result.value, id: uid(), createdAt: Date.now(), updatedAt: Date.now() };
   const next = { ...state, supplies: [...state.supplies, entity] };
   if (ctx.commit(next, { success: `${guide.name}を台帳に追加しました。`, syncOps: [{ kind: "supplies", entity }] })) {
-    refocus(`[data-add-recommended="${key}"]`);
+    refocus(`[data-add-recommended="${CSS.escape(key)}"]`);
   }
 }
 
@@ -506,7 +506,7 @@ function consumeSupply(ctx, id) {
     ? state.shopping
     : [...state.shopping, { id: uid(), name: supply.name, done: false, updatedAt: Date.now() }];
   if (ctx.commit({ ...state, supplies, shopping }, { success: null, syncOps: [{ kind: "supplies", entity: updated }] })) {
-    refocus(`[data-consume="${id}"]`);
+    refocus(`[data-consume="${CSS.escape(id)}"]`);
   }
 }
 
@@ -519,7 +519,7 @@ function toggleReady(ctx, id) {
   const ok = ctx.commit({ ...state, supplies }, { success: null, syncOps: [{ kind: "supplies", entity: updated }] });
   // チェックボックスはブラウザが先にチェック状態を変えている。失敗時はrender()で
   // 実際のstateへ描画し直し、見た目を巻き戻す。成功時は再描画後の同じidの要素へ戻す。
-  if (ok) refocus(`[data-ready="${id}"]`);
+  if (ok) refocus(`[data-ready="${CSS.escape(id)}"]`);
   else ctx.render();
 }
 
@@ -527,14 +527,14 @@ function toggleShoppingDone(ctx, id) {
   const state = ctx.getState();
   const shopping = state.shopping.map(item => (item.id === id ? { ...item, done: !item.done, updatedAt: Date.now() } : item));
   const ok = ctx.commit({ ...state, shopping }, { success: null });
-  if (ok) refocus(`[data-shopping-done="${id}"]`);
+  if (ok) refocus(`[data-shopping-done="${CSS.escape(id)}"]`);
   else ctx.render();
 }
 
 function removeShoppingItem(ctx, id) {
   const state = ctx.getState();
   const shopping = state.shopping.filter(item => item.id !== id);
-  if (ctx.commit({ ...state, shopping }, { success: null })) refocus(`[data-shopping-remove="${id}"]`);
+  if (ctx.commit({ ...state, shopping }, { success: null })) refocus(`[data-shopping-remove="${CSS.escape(id)}"]`);
 }
 
 // ── bind(ctx) ────────────────────────────────────────────────────────────
@@ -566,6 +566,16 @@ export function bind(ctx) {
 
     const removeShopping = event.target.closest("[data-shopping-remove]");
     if (removeShopping) return removeShoppingItem(ctx, removeShopping.dataset.shoppingRemove);
+
+    // .check-row のチェックボックスは<label>で包まれていないため素のヒット領域が24×24しか
+    // ない(44px未満、レビュー指摘)。emergency.js の.emergency-stepカード委譲と同じ手当てを
+    // ここでも行う: 行内のどこをタップしてもチェックボックスへ委譲する。チェックボックス自身
+    // (二重トグル防止)と編集・削除ボタンなど他の操作要素の上では何もしない。
+    const row = event.target.closest(".check-row");
+    if (row) {
+      const checkbox = row.querySelector('input[type="checkbox"]');
+      if (checkbox && event.target !== checkbox && !event.target.closest("button,a")) checkbox.click();
+    }
   });
 
   panel.addEventListener("change", event => {

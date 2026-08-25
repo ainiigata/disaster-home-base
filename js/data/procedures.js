@@ -59,7 +59,7 @@ export const PROCEDURES = [
   { id: "fl-alert-info", hazard: "flood", phase: "alert", title: "川の水位情報をこまめに確認する", body: "国や都道府県の川の防災情報で近くの河川水位を確認し、上昇の兆候があれば早めに避難します。", keywords: ["水位情報", "河川"] },
   { id: "fl-now-vertical", hazard: "flood", phase: "now", title: "水位が上がったらためらわず上の階へ避難する", body: "外への移動が危険なときは無理をせず、自宅や近くの建物の高い階へ移動する垂直避難を選びます。", keywords: ["垂直避難", "上階"] },
   { id: "fl-now-noflow", hazard: "flood", phase: "now", title: "流れのある水の中を歩かない", body: "水深がひざ下でも流れがあれば転倒し流されます。やむを得ず移動するときだけ、長い棒で足元を確かめながら進んでください。", keywords: ["流れる水", "歩行危険"] },
-  { id: "fl-now-car", hazard: "flood", phase: "now", title: "冠水した道路や地下道を車で通らない", body: "浅い水深でもエンジンが停止し、車内に閉じ込められる事故が起きています。危険を感じたら迂回し、ドアが開かないときは窓を割って脱出します。", keywords: ["車", "冠水路", "スタック"] },
+  { id: "fl-now-car", hazard: "flood", phase: "now", title: "冠水した道路や地下道を車で通らない", body: "浅い水深でもエンジンが停止し、車内に閉じ込められる事故が起きています。危険を感じたら迂回し、ドアが開かないときはサイドガラスを脱出用ハンマーやヘッドレストの金具で割って脱出します(フロントガラスは割れません)。", keywords: ["車", "冠水路", "スタック"] },
   { id: "fl-after-electric", hazard: "flood", phase: "after", title: "水に浸かった電気設備には近づかない", body: "感電の危険があるため、浸水した分電盤やコンセント、家電製品には点検が済むまで触れないでください。", keywords: ["電気設備", "感電"] },
   { id: "fl-recover-clean", hazard: "flood", phase: "recover", title: "浸水した室内は消毒してから十分に乾燥させる", body: "泥や汚水にはさまざまな菌が含まれます。手袋・長靴を着け、消毒と換気・乾燥をしっかり行ってから使用します。", keywords: ["消毒", "乾燥", "衛生"] },
   { id: "fl-recover-photo", hazard: "flood", phase: "recover", title: "片付け前に浸水の高さと被害を写真で記録する", body: "壁の浸水線や被害品を撮影しておくと、罹災証明書や保険の申請に使えます。片付けは記録の後にします。", keywords: ["浸水線", "写真記録", "罹災証明"] },

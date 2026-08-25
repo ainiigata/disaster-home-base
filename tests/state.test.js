@@ -35,7 +35,7 @@ test("migrateV1: v1の品目・家族・保険を引き継ぎrecommendedKey=null
     familyMembers: [{ id: "f1", label: "父", contactNote: "", meetingPlace: "小学校", considerations: "" }],
     favoriteProcedureIds: ["eq-drop", "存在しないID"],
     insurance: { status: "insured", coverages: { earthquake: true, stormFlood: false, household: false }, policyLocation: "金庫", renewalOn: null, lastCheckedOn: "2026-01-01", note: "" },
-    ui: { view: "supplies", supplyTab: "stock", search: "", hazardFilter: "all" } };
+    ui: { view: "supplies", supplyTab: "stock", hazardFilter: "all" } };
   const s = migrateV1(v1);
   assert.equal(s.schemaVersion, 2);
   assert.equal(s.supplies[0].recommendedKey, null);
@@ -103,13 +103,13 @@ test("safeState: shoppingは{id,name,done,updatedAt}のみ採用し、名前が�
 });
 
 test("safeState: ui.supplyTab / ui.phaseFilterはホワイトリスト外なら既定値へフォールバック", () => {
-  const s = safeState({ ...defaultState(), ui: { view: "home", supplyTab: "invalid-tab", search: "", hazardFilter: "all", phaseFilter: "invalid-phase" } });
+  const s = safeState({ ...defaultState(), ui: { view: "home", supplyTab: "invalid-tab", hazardFilter: "all", phaseFilter: "invalid-phase" } });
   assert.equal(s.ui.supplyTab, "goBag");
   assert.equal(s.ui.phaseFilter, "all");
 });
 
 test("safeState: ui.supplyTab / ui.phaseFilterは正しい値ならそのまま通す", () => {
-  const s = safeState({ ...defaultState(), ui: { view: "supplies", supplyTab: "rolling", search: "", hazardFilter: "all", phaseFilter: "prepare" } });
+  const s = safeState({ ...defaultState(), ui: { view: "supplies", supplyTab: "rolling", hazardFilter: "all", phaseFilter: "prepare" } });
   assert.equal(s.ui.supplyTab, "rolling");
   assert.equal(s.ui.phaseFilter, "prepare");
 });

@@ -7,8 +7,11 @@
 // #emergency-family #emergency-contacts のみを担当する。
 
 import { PROCEDURES } from "../data/procedures.js";
-import { HAZARD_LABELS } from "../data/hazards.js";
+import { HAZARD_LABELS, PHASES, PHASE_LABELS } from "../data/hazards.js";
 import { $, esc } from "./render.js";
+
+// 「今すぐ」「身の安全を確保したら」以外の段階(ふだんの備え・警報時・生活再建)。
+const EXTRA_PHASES = PHASES.filter(phase => phase !== "now" && phase !== "after");
 
 // ── 手順(now→after) ─────────────────────────────────────────────────────
 
@@ -46,6 +49,40 @@ function proceduresSection(headingId, heading, note, procedures, state, extraCla
     </section>`;
 }
 
+// 「今すぐ」「身の安全を確保したら」以外の段階(参考情報。チェック不可)を、画面遷移
+// させずに<details>へ折りたたんで表示する(レビュー指摘: 唯一の全手順への導線だった
+// ボタンがdata-view="procedures"を指していたが、緊急モード中は常にemergency画面へ
+// 固定されるため実際には何も起きなかった。暗い部屋で画面遷移させないこの形の方が良い)。
+function extraStepRow(procedure) {
+  return `
+    <div class="emergency-step-ref">
+      <h4>${esc(procedure.title)}</h4>
+      <p>${esc(procedure.body)}</p>
+    </div>`;
+}
+
+function extraPhaseGroup(headingId, phase, procedures) {
+  if (procedures.length === 0) return "";
+  return `
+    <section aria-labelledby="${headingId}">
+      <h3 id="${headingId}">${esc(PHASE_LABELS[phase])}</h3>
+      ${procedures.map(extraStepRow).join("")}
+    </section>`;
+}
+
+function renderExtraPhases(hazard, forHazard, state) {
+  const groups = EXTRA_PHASES.map(phase =>
+    extraPhaseGroup(`more-${phase}-title`, phase, forHazard.filter(p => p.phase === phase))
+  ).join("");
+  if (!groups) return ""; // このAPP.mdの「未接続ボタンがない」を保つため、中身が無ければ<details>ごと出さない。
+
+  return `
+    <details class="emergency-more">
+      <summary>${esc(HAZARD_LABELS[hazard])}のそのほかの手順(ふだんの備え・警報時・生活再建)</summary>
+      ${groups}
+    </details>`;
+}
+
 function renderProcedures(state) {
   const hazard = state.selectedHazard;
   const forHazard = PROCEDURES.filter(p => p.hazard === hazard);
@@ -57,12 +94,7 @@ function renderProcedures(state) {
     proceduresSection("later-steps-title", "身の安全を確保したら", "落ち着いてから、順番に確認してください。", after, state, "later-steps"),
   ].join("");
 
-  const allLink = `
-    <p class="section-note">
-      <button type="button" class="text-button" data-view="procedures" data-hazard="${esc(hazard)}">${esc(HAZARD_LABELS[hazard])}のすべての手順を見る(平時の備え・生活再建を含む)</button>
-    </p>`;
-
-  $("#emergency-procedures").innerHTML = sections + allLink;
+  $("#emergency-procedures").innerHTML = sections + renderExtraPhases(hazard, forHazard, state);
 }
 
 // ── 持ち出し品 ───────────────────────────────────────────────────────────
@@ -94,7 +126,7 @@ const orNote = value => (value ? esc(value) : "未登録");
 function familyRow(member) {
   return `
     <article class="family-card">
-      <h2>${esc(member.label)}</h2>
+      <h3>${esc(member.label)}</h3>
       <dl>
         <dt>集合場所</dt><dd>${orNote(member.meetingPlace)}</dd>
         <dt>配慮事項</dt><dd>${orNote(member.considerations)}</dd>

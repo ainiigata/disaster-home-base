@@ -846,8 +846,6 @@ main {
 }
 .emergency-bar > span:last-child { margin-left: auto; font-weight: 700; }
 
-.urgent-lead { margin: 0 0 .2em; color: var(--danger); font-size: var(--fs-lead); font-weight: 800; }
-
 .official-note {
   padding: 13px 15px;
   border: 1px solid #e2a9a2;
@@ -875,11 +873,36 @@ main {
 .emergency-step p { margin: 4px 0 0; }
 .later-steps { padding-top: 18px; border-top: 3px solid #d9dedb; }
 
+/* 「今すぐ」「身の安全を確保したら」以外の段階(ふだんの備え・警報時・生活再建)を
+   折りたたんで表示する。チェック不可の参考情報なのでチェックボックスは持たない。 */
+.emergency-more { margin-top: 22px; }
+.emergency-more summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 2px solid #cfd4d2;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.emergency-more[open] summary { border-radius: 12px 12px 0 0; border-bottom: 0; }
+.emergency-more > section {
+  padding: 4px 14px 16px;
+  border: 2px solid #cfd4d2;
+  border-top: 0;
+  border-radius: 0 0 12px 12px;
+}
+.emergency-more > section + section { border-top: 1px solid #d9dedb; }
+.emergency-more h3 { margin: 14px 0 4px; font-size: var(--fs-small); }
+.emergency-step-ref { padding: 8px 0; }
+.emergency-step-ref h4 { margin: 0; font-size: var(--fs-body); }
+.emergency-step-ref p { margin: 4px 0 0; }
+
 .emergency-columns { display: grid; gap: 14px; margin-top: 22px; }
 .emergency-panel { margin-top: 18px; padding: 16px 17px; }
 .emergency-columns .emergency-panel { margin-top: 0; }
-/* 中身が空のうちは見出しだけを残さない。 */
-.emergency-panel:has([data-region]:empty) { display: none; }
 
 .steps-171 { margin: 0; padding-left: 1.4em; }
 .steps-171 li { margin-bottom: .35em; }
@@ -913,12 +936,19 @@ body.emergency-active h3 {
   letter-spacing: 0;
 }
 body.emergency-active h1 { color: var(--danger); }
+body.emergency-active #emergency-title {
+  /* h1のブラウザ既定margin(.67em 上下)を詰める。緊急モードの最初のチェック項目まで
+     不要な余白を積み上げないため(レビュー指摘: 375×812で469pxもかかっていた)。 */
+  margin: 0 0 12px;
+}
 body.emergency-active .app-header {
   background: #fff;
   border-bottom: 3px solid var(--danger);
   backdrop-filter: none;
 }
-body.emergency-active .brand { visibility: hidden; }
+/* visibility:hiddenだと48pxの空箱がそのまま残り、position:stickyなヘッダーの帯を
+   常に押し広げたままになる(レビュー指摘)。display:noneでその領域自体を畳む。 */
+body.emergency-active .brand { display: none; }
 body.emergency-active .side-nav,
 body.emergency-active .bottom-nav,
 body.emergency-active .right-rail { display: none !important; }
@@ -928,6 +958,11 @@ body.emergency-active main {
   padding-bottom: 48px;
 }
 body.emergency-active .notice {
+  /* .notice の既定top(78px)は通常時のヘッダー高さ基準。緊急モードは.brandが消えて
+     ヘッダーが低くなる一方、z-index: 30の.app-headerの方が.noticeより上に来る指定
+     のままだと、stickyのtop値次第では通知がヘッダーの裏に隠れる(レビュー指摘)。
+     ここで緊急時のヘッダー実測に合わせて詰める。 */
+  top: 58px;
   border-color: var(--line-strong);
   border-left-color: var(--danger);
   background: #fff;

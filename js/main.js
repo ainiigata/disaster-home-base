@@ -120,7 +120,9 @@ function notice(text, isError = false) {
   box.classList.toggle("is-error", isError);
   box.classList.remove("hidden");
   clearTimeout(noticeTimer);
-  noticeTimer = setTimeout(() => box.classList.add("hidden"), NOTICE_MS);
+  // エラー通知は保存失敗など利用者が対処すべき状態を表すため、次の通知に置き換わるまで
+  // 画面に残す(自動で消して見落とされると、入力が保存されていないことに気づけない)。
+  if (!isError) noticeTimer = setTimeout(() => box.classList.add("hidden"), NOTICE_MS);
 }
 
 // ── リモート→ローカル ────────────────────────────────────────────────────
@@ -153,8 +155,12 @@ function handleRemoteCollection(kind, upserts, removedIds) {
   if (!validate) return; // 未知のkindは無視(将来の拡張に対する防御)
   const clean = upserts.flatMap(x => {
     const v = validate(x);
+    // createdAtはsuppliesのスキーマにしかない(locations/familyMembersのvalidate*()は
+    // 返さない)。全kind一律で付けると、safeState側で持たない余分なキーが混ざり、
+    // loadState()のdeepEqualガードが「保存されていたデータの一部を修復しました。」を
+    // 家族共有ユーザーに毎回誤って出してしまう(レビュー指摘)。
     return v.valid
-      ? [{ ...v.value, id: x.id, createdAt: finiteOr0(x.createdAt), updatedAt: finiteOr0(x.updatedAt) }]
+      ? [{ ...v.value, id: x.id, ...(kind === "supplies" ? { createdAt: finiteOr0(x.createdAt) } : {}), updatedAt: finiteOr0(x.updatedAt) }]
       : [];
   });
   let list = mergeEntities(state[kind], clean);
@@ -259,7 +265,9 @@ function showView(name, { focus = true, tab = null, hazard = null, favoritesOnly
 
   // お気に入り絞り込みだけは状態に持たない(端末にも残さない)。
   // チェックボックスそのものが唯一の持ち主で、ui/procedures.js がそれを読む。
-  if (favoritesOnly) $("#favorites-only").checked = true;
+  // favoritesOnlyが立っていない遷移では明示的にfalseへ戻す(そうしないと、
+  // 一度お気に入りショートカットを踏んだ後は他のどの遷移でもONのまま残ってしまう)。
+  $("#favorites-only").checked = favoritesOnly;
 
   render();
   if (!focus) return;
@@ -413,7 +421,10 @@ function startEmergency(hazard) {
     emergencyCheckedIds: keepChecks ? state.emergencyCheckedIds : [],
     ui: { ...state.ui, view: "emergency" },
   };
-  if (commit(next, { success: `${HAZARD_LABELS[hazard]}の緊急モードを開始しました。` })) showView("emergency");
+  // 緊急モード開始時は#noticeを出さない。#noticeは<main>の先頭子要素で、通知が出ると
+  // 6秒間チェック可能な最初の手順を約60px押し下げてしまう(レビュー指摘: もっとも
+  // 最初の一手が急がれる瞬間に、もっとも邪魔になる)。
+  if (commit(next, { success: null })) showView("emergency");
 }
 
 function exitEmergency() {

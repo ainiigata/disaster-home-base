@@ -79,7 +79,7 @@ export function defaultState() {
     emergencyCheckedIds: [],
     favoriteProcedureIds: [],
     dismissedReminders: [],
-    ui: { view: "home", supplyTab: "goBag", search: "", hazardFilter: "all", phaseFilter: "all" },
+    ui: { view: "home", supplyTab: "goBag", hazardFilter: "all", phaseFilter: "all" },
     sync: { enabled: false, passphrase: null, householdId: null },
   };
 }
@@ -150,12 +150,16 @@ function normalizeDismissedReminders(raw) {
   return [...new Set(raw.filter(id => typeof id === "string"))].slice(-DISMISSED_REMINDERS_LIMIT);
 }
 
+// 検索語(ui.search)はここでは扱わない。Task 9で意図的に、検索語は端末にも保存せず
+// js/ui/procedures.js内のモジュールスコープ変数だけが持つエフェメラル値にしている。
+// もしここで永続化してしまうと、緊急モード中に(過去に絞り込んだままの)古い検索語が
+// 手順検索の初期表示を勝手に絞り込んでしまい、必要な手順が見つからない事故につながる。
+// この関門を通さないことで、その害を将来また作り込めないようにしている。
 function normalizeUI(raw) {
   const ui = raw ?? {};
   return {
     view: UI_VIEWS.includes(ui.view) ? ui.view : "home",
     supplyTab: SUPPLY_TABS.includes(ui.supplyTab) ? ui.supplyTab : "goBag",
-    search: typeof ui.search === "string" ? ui.search.slice(0, 50) : "",
     hazardFilter: HAZARD_FILTERS.includes(ui.hazardFilter) ? ui.hazardFilter : "all",
     phaseFilter: PHASE_FILTERS.includes(ui.phaseFilter) ? ui.phaseFilter : "all",
   };
