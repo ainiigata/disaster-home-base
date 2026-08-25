@@ -13,11 +13,12 @@
 //      next を localStorage へ保存し、成功したら状態を差し替えて render() する。
 //      success: 保存成功時の通知文(既定「端末に保存しました。」/ null で通知なし)
 //      error:   保存失敗時の通知文(既定「保存できませんでした。入力は残っています。…」)
-//      syncOps: 家族共有への反映指示の配列。共有はTask 12で実装されるため現在は
-//               受け取るだけの no-op。呼び出し側は最初から正しい形で渡してよい:
+//      syncOps: 家族共有への反映指示の配列。state.sync.enabled && sync.isConfigured()
+//               のときだけ実際にFirestoreへ送信される(それ以外は無視される no-op)。
 //                 {kind:"supplies"|"locations"|"familyMembers", entity}  … 追加・更新
 //                 {kind:"supplies"|"locations"|"familyMembers", removedId} … 削除
-//                 {shared:"insurance"|"household"|"all"}                 … 単一ドキュメント
+//                 {shared:"insurance"|"household"}                       … 単一ドキュメント
+//                 {shared:"all"}                                         … 世帯データ一式
 //      戻り値 false は「保存に失敗し、状態は変わっていない(#notice への通知表示を除く)」。
 //      チェックボックス等 DOM側が先に変わる操作では、false のとき呼び出し側で ctx.render() して戻すこと。
 //
@@ -55,6 +56,14 @@
 //      理由を出す(入力はそのまま残る)。成功時は close(既定true)でダイアログを閉じ、
 //      afterSave があれば呼ぶ。
 //
+//  startSync(householdId) -> Promise<void>
+//      households/{householdId} の購読を(再)確立する(このファイル所有のリモート
+//      ハンドラーで登録する)。firebase-config.js が未設定なら何もせず解決する。
+//      失敗しても例外は投げない(状態は getSyncStatus() 経由でエラーとして見える)。
+//
+//  getSyncStatus() -> { phase: "off"|"connecting"|"live"|"error", error }
+//      直近の同期状態。ui/share.js の状態インジケーターが読む。
+//
 // ── 画面の担当(重複してバインドしないこと) ──
 //  シェル(このファイル): data-view / data-tab / data-hazard / data-favorites の遷移、
 //    data-supply-tab のタブ切替(矢印キー含む)、data-close-dialog、ダイアログの背景
@@ -73,18 +82,19 @@
 
 import { loadState, saveState } from "./state.js";
 import { HAZARDS, HAZARD_LABELS, HAZARD_GLYPHS, PHASES, PHASE_LABELS } from "./data/hazards.js";
+import { mergeEntities } from "./sync-logic.js";
+import { validateSupply, validateLocation, validateFamily, validateInsurance, validateHousehold } from "./validate.js";
+import * as sync from "./sync.js";
 import { $, $$, esc } from "./ui/render.js";
 import * as home from "./ui/home.js";
 import * as procedures from "./ui/procedures.js";
 import * as supplies from "./ui/supplies.js";
 import * as family from "./ui/family.js";
 import * as emergency from "./ui/emergency.js";
+import * as share from "./ui/share.js";
 
 // ── ビューモジュールの登録 ────────────────────────────────────────────────
-// Task 12 はここへ import を1行、MODULES へ名前を1つ足すだけでよい。例:
-//   import * as home from "./ui/home.js";
-//   const MODULES = [home];
-const MODULES = [home, procedures, supplies, family, emergency];
+const MODULES = [home, procedures, supplies, family, emergency, share];
 
 const VIEWS = ["home", "supplies", "procedures", "family", "emergency"];
 const SUPPLY_TABS = ["goBag", "stock", "rolling", "locations", "insurance"];
@@ -94,6 +104,9 @@ const NOTICE_MS = 6000;
 let state;
 let pendingConfirm = null;
 let noticeTimer = 0;
+let syncStatus = { phase: "off", error: null };
+
+const finiteOr0 = n => (Number.isFinite(n) ? n : 0);
 
 const el = (target, selector) => (target instanceof Element ? target.closest(selector) : null);
 
@@ -110,14 +123,99 @@ function notice(text, isError = false) {
   noticeTimer = setTimeout(() => box.classList.add("hidden"), NOTICE_MS);
 }
 
+// ── リモート→ローカル ────────────────────────────────────────────────────
+// Firestoreから届くデータは「合言葉を知っている別の端末」が書いたものであり、
+// この端末にとっては信頼できない入力。必ずvalidate*()へ通し、無効なら黙って捨てる
+// (エラー通知は出さない。一部端末の不正データで他端末の同期全体を止めないため)。
+
+const REMOTE_VALIDATORS = {
+  supplies: x => {
+    const known = state.locations.map(l => l.id);
+    // 保管場所コレクションより先にsuppliesスナップショットが届くことがある
+    // (3つのonSnapshotの到着順は保証されない)。未知のlocationIdを理由に
+    // 備蓄品ごと捨てると、参加直後の初回同期で大量に欠落するため、
+    // locationIdは「もっともらしい文字列」であれば暫定的に受け入れる。
+    // 場所が未着の間はUI側が「場所未登録」表示でしのぎ、後から届けば自然に解決する。
+    const tentative = typeof x.locationId === "string" && x.locationId.length <= 60 ? [x.locationId] : [];
+    return validateSupply(x, [...known, ...tentative]);
+  },
+  locations: validateLocation,
+  familyMembers: validateFamily,
+};
+
+// kind: "supplies"|"locations"|"familyMembers"。
+// mergeEntities は id 単位の last-write-wins(updatedAt が大きい方。同値ならremote)なので、
+// リモートの方が古い変更なら負ける=より新しいローカル編集を上書きしない。
+// 削除(removedIds)だけはタイムスタンプを比較せず無条件に反映する(現状のUIに削除操作は
+// 存在しないため実害はないが、将来削除機能を足すときはここが競合しうる点に注意)。
+function handleRemoteCollection(kind, upserts, removedIds) {
+  const validate = REMOTE_VALIDATORS[kind];
+  if (!validate) return; // 未知のkindは無視(将来の拡張に対する防御)
+  const clean = upserts.flatMap(x => {
+    const v = validate(x);
+    return v.valid
+      ? [{ ...v.value, id: x.id, createdAt: finiteOr0(x.createdAt), updatedAt: finiteOr0(x.updatedAt) }]
+      : [];
+  });
+  let list = mergeEntities(state[kind], clean);
+  if (removedIds.length) list = list.filter(entity => !removedIds.includes(entity.id));
+  state = { ...state, [kind]: list };
+  try {
+    saveState(state);
+  } catch {
+    /* 端末への保存に失敗してもリモート反映自体は続行する(次の同期でまた届く) */
+  }
+  render();
+}
+
+// kind: "insurance"|"household"(単一ドキュメントなのでmergeEntitiesは使わず、
+// updatedAtを直接比較するlast-write-winsで代える)。
+function handleRemoteShared(kind, data) {
+  if (kind !== "insurance" && kind !== "household") return; // 未知のkindは無視
+  const remoteUpdatedAt = finiteOr0(data?.updatedAt);
+  if (remoteUpdatedAt <= finiteOr0(state[kind].updatedAt)) return; // 自分の方が新しければ何もしない
+  const v = kind === "insurance" ? validateInsurance(data ?? {}) : validateHousehold(data ?? {});
+  if (!v.valid) return;
+  state = { ...state, [kind]: { ...v.value, updatedAt: remoteUpdatedAt } };
+  try {
+    saveState(state);
+  } catch {
+    /* 同上 */
+  }
+  render();
+}
+
+function handleSyncStatus(next) {
+  syncStatus = next;
+  render();
+}
+
+// households/{householdId} の購読を(再)開始する。ui/share.js(作成・参加時)と
+// boot()(起動時、state.sync.enabledなら)の両方から呼ばれる。常にこの3つの
+// ハンドラーで登録することで、sync.js側の単一のstatusコールバック枠が
+// 常にこのモジュールの持ち物であることを保証する(ui/share.jsはpushAll/stopSync/
+// isConfiguredだけをsync.jsから直接呼び、購読の張り直しはここを経由する)。
+function startHouseholdSync(householdId) {
+  return sync.startSync(householdId, {
+    onRemoteCollection: handleRemoteCollection,
+    onRemoteShared: handleRemoteShared,
+    onStatus: handleSyncStatus,
+  });
+}
+
 // ── 保存 ─────────────────────────────────────────────────────────────────
 
-// 共有(Task 12)が入るまでの受け皿。呼び出し側は最初からsyncOpsを渡してよい。
 function runSyncOps(syncOps) {
   if (!Array.isArray(syncOps) || syncOps.length === 0) return;
-  // Task 12: state.sync.enabled && isConfigured() のときだけ
-  // {kind, entity}→pushEntity / {kind, removedId}→removeEntity /
-  // {shared}→pushShared・pushAll を実行する(いずれもfire-and-forget)。
+  if (!state.sync.enabled || !state.sync.householdId || !sync.isConfigured()) return;
+  const hid = state.sync.householdId;
+  for (const op of syncOps) {
+    if (!op) continue;
+    if (op.shared === "all") sync.pushAll(hid, state);
+    else if (op.shared) sync.pushShared(hid, op.shared, state[op.shared]);
+    else if (op.kind && "removedId" in op) sync.removeEntity(hid, op.kind, op.removedId);
+    else if (op.kind && "entity" in op) sync.pushEntity(hid, op.kind, op.entity);
+  }
 }
 
 function commit(next, { success = "端末に保存しました。", error = SAVE_ERROR, syncOps = [] } = {}) {
@@ -416,6 +514,9 @@ export const ctx = {
   openDialog,
   fillErrors,
   commitForm,
+  // Task 12: ui/share.js が世帯作成・参加のたびにこれを呼び、購読を(再)確立する。
+  startSync: startHouseholdSync,
+  getSyncStatus: () => syncStatus,
 };
 
 // ── 起動 ─────────────────────────────────────────────────────────────────
@@ -430,6 +531,13 @@ function boot() {
 
   showView(state.ui.view, { focus: false });
   if (loaded.notice) notice(loaded.notice, loaded.isError);
+
+  // 前回の共有設定が残っていれば起動時に再接続する。firebase-config.js が未設定
+  // (isConfigured()===false)のあいだはsync.startSync自身が何もせずに返るため、
+  // ここは常に安全に呼べる。失敗してもアプリの他機能には影響しない。
+  if (state.sync.enabled && state.sync.householdId && sync.isConfigured()) {
+    startHouseholdSync(state.sync.householdId).catch(() => {});
+  }
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
 }
