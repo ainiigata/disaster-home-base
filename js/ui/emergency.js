@@ -12,16 +12,25 @@ import { $, esc } from "./render.js";
 
 // ── 手順(now→after) ─────────────────────────────────────────────────────
 
+// 見出し(h2)+本文をチェックボックスの<label>の中に置くと、アクセシブルネームが
+// 見出しと本文を切れ目なく連結した長い一文になってしまい、見出しレベルも
+// section(h2)と同列のh2が10個近く並ぶ状態になる(レビュー指摘)。
+// そこで見出し(h3・sectionのh2より1段下げる)と本文はチェックボックスの外に出し、
+// aria-labelledby(見出しのみ)・aria-describedby(本文)で結び付ける。
+// カード全体の44px以上のタップ領域は<label>の暗黙の関連付けに頼らず、
+// bind()側で.emergency-step全体のクリックをチェックボックスへ委譲して復元する。
 function emergencyStep(state, procedure) {
   const checked = state.emergencyCheckedIds.includes(procedure.id);
+  const titleId = `step-${procedure.id}-title`;
+  const bodyId = `step-${procedure.id}-body`;
   return `
-    <label class="emergency-step${checked ? " checked" : ""}">
-      <input type="checkbox" data-emergency-check="${esc(procedure.id)}" ${checked ? "checked" : ""}>
+    <div class="emergency-step${checked ? " checked" : ""}">
+      <input type="checkbox" data-emergency-check="${esc(procedure.id)}" aria-labelledby="${titleId}" aria-describedby="${bodyId}" ${checked ? "checked" : ""}>
       <span>
-        <h2>${esc(procedure.title)}</h2>
-        <p>${esc(procedure.body)}</p>
+        <h3 id="${titleId}" style="margin:0">${esc(procedure.title)}</h3>
+        <p id="${bodyId}">${esc(procedure.body)}</p>
       </span>
-    </label>`;
+    </div>`;
 }
 
 // phaseごとの手順が0件のときは見出しごと出さない(全11災害のうちいくつかは
@@ -149,8 +158,24 @@ function toggleEmergencyCheck(ctx, id) {
 // ── bind(ctx) ────────────────────────────────────────────────────────────
 
 export function bind(ctx) {
-  $("#emergency-procedures").addEventListener("change", event => {
+  const container = $("#emergency-procedures");
+
+  container.addEventListener("change", event => {
     const check = event.target.closest("[data-emergency-check]");
     if (check) toggleEmergencyCheck(ctx, check.dataset.emergencyCheck);
+  });
+
+  // カードは<label>ではなくただの<div>なので、チェックボックス以外の場所(見出し・
+  // 本文・余白)をタップしてもブラウザは何もしてくれない。ここでカード全体を44px以上の
+  // タップ領域として復元する: チェックボックス自身へのクリックはブラウザの標準動作
+  // (トグル→change)にそのまま任せ、二重トグルを避けるため何もしない。それ以外の
+  // クリックだけ、チェックボックスへ.click()を委譲する(ネイティブのトグル+change発火を
+  // 再利用するので、状態更新のロジックはtoggleEmergencyCheckの1箇所のままでよい)。
+  container.addEventListener("click", event => {
+    const card = event.target.closest(".emergency-step");
+    if (!card) return;
+    const checkbox = card.querySelector("[data-emergency-check]");
+    if (!checkbox || event.target === checkbox) return;
+    checkbox.click();
   });
 }
