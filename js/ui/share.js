@@ -129,14 +129,18 @@ async function handleCreate(ctx) {
     const state = ctx.getState();
     const passphrase = generatePassphrase();
     const householdId = await householdIdFromPassphrase(passphrase);
-
-    // 今の端末の内容を先にアップロードしてから購読を始める(brief記載の順序)。
-    // pushAllはfire-and-forgetなのでawaitしない。
-    pushAll(householdId, state);
-    ctx.startSync(householdId).catch(() => {});
-
     const next = { ...state, sync: { enabled: true, passphrase, householdId } };
+
+    // 保存が成功するまではpushAll/startSyncを呼ばない。先に呼んでしまうと、
+    // commitがlocalStorageの書き込み失敗などで失敗したときにFirestoreの購読
+    // (onSnapshot)だけが生き残り、state.sync.enabled===falseで画面はOFF表示の
+    // ままなのにリモートのデータをstateへ取り込み続けるという事故が起きる
+    // (リロードするまで止める手段がない)。commitForm経由のsubmitJoinForm()と
+    // 同じ「保存できてから送信」の順序に揃えている。
     if (!ctx.commit(next, { success: null })) return;
+
+    pushAll(householdId, next);
+    ctx.startSync(householdId).catch(() => {});
 
     passphraseRevealed = false;
     $("#share-passphrase").textContent = passphrase;
@@ -177,6 +181,32 @@ async function submitJoinForm(ctx, event) {
   }
 
   const mergeMode = form.elements.mergeMode.value === "replace" ? "replace" : "merge";
+
+  // 「世帯のデータで置き換える」は取り消せない: この端末の家族カード・持ち出し品・
+  // 備蓄・保管場所・保険メモがすべて消え、代わりに合言葉の世帯の内容に置き換わる。
+  // 合言葉を1文字でも打ち間違えると、householdIdFromPassphraseは(存在しない)別の
+  // 64桁hexを問題なく返してしまい、Firestore側もエラーにならず「ドキュメント0件の
+  // 世帯にlive購読できた」状態になる — つまり誤入力でもこの端末のデータだけが
+  // 消えて戻らない。「共有をやめる」(何も破壊しない)でも確認を挟んでいるのに、
+  // 破壊的なこちらに確認がないのは非対称なので、リセット・保存の前に必ず確認する。
+  // 「合流する」は加算的(既存データは消えない)なので確認なしのままにする。
+  if (mergeMode === "replace") {
+    ctx.confirmAction(
+      "この端末のデータを置き換えますか？",
+      "この端末の家族カード・持ち出し品・備蓄・保管場所・保険メモは、合言葉で参加する家族グループの内容に置き換えられます。この操作は取り消せません。",
+      "置き換えて参加する",
+      () => finishJoin(ctx, form, householdId, normalized, "replace")
+    );
+    return;
+  }
+
+  finishJoin(ctx, form, householdId, normalized, "merge");
+}
+
+// submitJoinForm から、確認が要らない「合流する」は直接、確認が要る「置き換える」は
+// confirmActionのonConfirmから呼ばれる。householdId・normalizedはユーザーが確認ダイアログで
+// 考えている間もフォームの値を再読していないため、確認中に入力欄が変わっても影響しない。
+function finishJoin(ctx, form, householdId, normalized, mergeMode) {
   const state = ctx.getState();
   const base = mergeMode === "replace" ? resetSharedData(state) : state;
   const next = { ...base, sync: { enabled: true, passphrase: normalized, householdId } };

@@ -169,11 +169,15 @@ function handleRemoteCollection(kind, upserts, removedIds) {
 }
 
 // kind: "insurance"|"household"(単一ドキュメントなのでmergeEntitiesは使わず、
-// updatedAtを直接比較するlast-write-winsで代える)。
+// updatedAtを直接比較するlast-write-winsで代える)。タイブレークの向きは
+// mergeEntities(同値ならremoteが勝つ)と揃えてある。今のところ両者が揃って
+// 起きるのは双方とも未編集(updatedAt:0の既定値)のときだけで内容も同一なので
+// 実害はないが、将来タイムスタンプの粒度が変わったときに観測可能な不整合になる
+// のを避けるため、意図的にコレクション側と同じ向きにしている。
 function handleRemoteShared(kind, data) {
   if (kind !== "insurance" && kind !== "household") return; // 未知のkindは無視
   const remoteUpdatedAt = finiteOr0(data?.updatedAt);
-  if (remoteUpdatedAt <= finiteOr0(state[kind].updatedAt)) return; // 自分の方が新しければ何もしない
+  if (remoteUpdatedAt < finiteOr0(state[kind].updatedAt)) return; // 自分の方が厳密に新しければ何もしない(同値ならremoteを採用)
   const v = kind === "insurance" ? validateInsurance(data ?? {}) : validateHousehold(data ?? {});
   if (!v.valid) return;
   state = { ...state, [kind]: { ...v.value, updatedAt: remoteUpdatedAt } };
