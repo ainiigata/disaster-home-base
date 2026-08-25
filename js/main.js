@@ -77,12 +77,14 @@ import { $, $$, esc } from "./ui/render.js";
 import * as home from "./ui/home.js";
 import * as procedures from "./ui/procedures.js";
 import * as supplies from "./ui/supplies.js";
+import * as family from "./ui/family.js";
+import * as emergency from "./ui/emergency.js";
 
 // ── ビューモジュールの登録 ────────────────────────────────────────────────
-// Task 11-12 はここへ import を1行、MODULES へ名前を1つ足すだけでよい。例:
+// Task 12 はここへ import を1行、MODULES へ名前を1つ足すだけでよい。例:
 //   import * as home from "./ui/home.js";
 //   const MODULES = [home];
-const MODULES = [home, procedures, supplies];
+const MODULES = [home, procedures, supplies, family, emergency];
 
 const VIEWS = ["home", "supplies", "procedures", "family", "emergency"];
 const SUPPLY_TABS = ["goBag", "stock", "rolling", "locations", "insurance"];
