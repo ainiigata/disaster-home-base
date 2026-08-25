@@ -76,12 +76,13 @@ import { HAZARDS, HAZARD_LABELS, HAZARD_GLYPHS, PHASES, PHASE_LABELS } from "./d
 import { $, $$, esc } from "./ui/render.js";
 import * as home from "./ui/home.js";
 import * as procedures from "./ui/procedures.js";
+import * as supplies from "./ui/supplies.js";
 
 // ── ビューモジュールの登録 ────────────────────────────────────────────────
-// Task 9-12 はここへ import を1行、MODULES へ名前を1つ足すだけでよい。例:
+// Task 11-12 はここへ import を1行、MODULES へ名前を1つ足すだけでよい。例:
 //   import * as home from "./ui/home.js";
 //   const MODULES = [home];
-const MODULES = [home, procedures];
+const MODULES = [home, procedures, supplies];
 
 const VIEWS = ["home", "supplies", "procedures", "family", "emergency"];
 const SUPPLY_TABS = ["goBag", "stock", "rolling", "locations", "insurance"];
