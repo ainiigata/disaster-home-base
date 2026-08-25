@@ -22,6 +22,8 @@ const CATEGORY_LABELS = {
 };
 
 const SUPPLIES_LIMIT = 200; // state.js の SUPPLIES_LIMIT と同じ値。超過を黙って切り捨てないための事前チェックに使う。
+const LOCATIONS_LIMIT = 30; // state.js の LOCATIONS_LIMIT と同じ値。超過すると次回読み込み時に古い保管場所が
+                             // 黙って切り捨てられ、それを参照する備蓄のlocationIdまで無効化されてしまうため事前に防ぐ。
 
 // ── 表示ヘルパー ─────────────────────────────────────────────────────────
 
@@ -247,7 +249,7 @@ function renderInsuranceTab(state) {
       <h3>確認のヒント</h3>
       <ul class="suggestion-list">${suggestions.map(text => `<li>${esc(text)}</li>`).join("")}</ul>
     </div>
-    <p class="disclaimer">このメモは個人の備忘録です。保険契約の内容・可否についての最終判断は、保険証券や保険会社への確認をもとに行ってください。</p>`;
+    <p class="disclaimer">この確認項目は一般的な目安であり、補償の可否や契約を勧めるものではありません。詳しい条件や最終判断は、保険証券や保険会社への確認をもとに行ってください。</p>`;
 }
 
 // ── render(ctx) ──────────────────────────────────────────────────────────
@@ -372,6 +374,16 @@ function submitLocationForm(ctx, event) {
   const state = ctx.getState();
   const id = form.elements.id.value || null;
   const existing = id ? state.locations.find(l => l.id === id) : null;
+
+  if (!existing && state.locations.length >= LOCATIONS_LIMIT) {
+    const box = $(".form-error", form);
+    if (box) {
+      box.textContent = "保管場所が上限(30件)に達しているため追加できません。";
+      box.classList.remove("hidden");
+      box.focus();
+    }
+    return;
+  }
 
   const raw = { name: form.elements.name.value, note: form.elements.note.value };
   const result = validateLocation(raw);
