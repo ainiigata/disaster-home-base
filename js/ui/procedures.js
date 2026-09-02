@@ -30,7 +30,7 @@ function procedureCard(state, procedure) {
       <h2>${esc(procedure.title)}</h2>
       <p>${esc(procedure.body)}</p>
       <button type="button" class="favorite-button" data-favorite="${esc(procedure.id)}" aria-pressed="${pressed}" aria-label="${label}">
-        <span aria-hidden="true">星</span>
+        <span aria-hidden="true">${pressed ? "★" : "☆"}</span>
       </button>
     </article>`;
 }
